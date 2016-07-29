@@ -55,7 +55,7 @@ def send_map_request(api, position):
 def get_new_coords(init_loc, distance, bearing):
     """ Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
     this will calculate the resulting lat/lng coordinates.
-    """ 
+    """
     R = 6378.1 #km radius of the earth
     bearing = math.radians(bearing)
 
@@ -69,7 +69,7 @@ def get_new_coords(init_loc, distance, bearing):
 
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
-def generate_location_steps(initial_loc, step_count):
+def generate_location_steps(initial_loc):
     #Bearing (degrees)
     NORTH = 0
     EAST = 90
@@ -82,9 +82,9 @@ def generate_location_steps(initial_loc, step_count):
 
     yield (initial_loc[0], initial_loc[1], 0) #insert initial location
 
-    ring = 1            
+    ring = 1
     loc = initial_loc
-    while ring < step_count:
+    while ring < initial_loc[2]:
         #Set loc to start at top left
         loc = get_new_coords(loc, ydist, NORTH)
         loc = get_new_coords(loc, xdist/2, WEST)
@@ -200,16 +200,7 @@ def search_loop(args):
 # Overseer main logic
 #
 def search(args, i):
-    num_steps = args.step_limit
-
-    # Update the location if needed
-    if 'NEXT_LOCATION' in config:
-        log.info('New location set')
-        config['ORIGINAL_LATITUDE'] = config['NEXT_LOCATION']['lat']
-        config['ORIGINAL_LONGITUDE'] = config['NEXT_LOCATION']['lon']
-        config.pop('NEXT_LOCATION', None)
-
-    position = (config['ORIGINAL_LATITUDE'], config['ORIGINAL_LONGITUDE'], 0)
+    initial_position = (config['POSITIONS'][0][0], config['POSITIONS'][0][1], 0)
 
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
@@ -218,16 +209,17 @@ def search(args, i):
             log.info("Skipping Pokemon Go login process since already logged in \
                 for another {:.2f} seconds".format(remaining_time))
         else:
-            login(args, position)
+            login(args, initial_position)
     else:
-        login(args, position)
+        login(args, initial_position)
 
     lock = Lock()
 
-    for step, step_location in enumerate(generate_location_steps(position, num_steps), 1):
-        log.debug("Queue search itteration {}, step {}".format(i, step))
-        search_args = (i, step_location, step, lock)
-        search_queue.put(search_args)
+    for position in config['POSITIONS']:
+        for step, step_location in enumerate(generate_location_steps(position), 1):
+            log.debug("Queue search itteration {}, step {}".format(i, step))
+            search_args = (i, step_location, step, lock)
+            search_queue.put(search_args)
 
     # Wait until this scan itteration queue is empty (not nessearily done)
     while not search_queue.empty():

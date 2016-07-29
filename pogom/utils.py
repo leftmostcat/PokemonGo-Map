@@ -39,8 +39,6 @@ def get_args():
     parser.add_argument('-p', '--password', help='Password')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
-    parser.add_argument('-st', '--step-limit', help='Steps', type=int,
-                        default=12)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=5)
@@ -112,9 +110,9 @@ def get_args():
             print sys.argv[0] + ': error: arguments -l/--location is required'
             sys.exit(1)
     else:
-        if (args.username is None or args.location is None or args.step_limit is None):
+        if (args.username is None or args.location is None):
             parser.print_usage()
-            print sys.argv[0] + ': error: arguments -u/--username, -l/--location, -st/--step-limit are required'
+            print sys.argv[0] + ': error: arguments -u/--username, -l/--location are required'
             sys.exit(1)
 
         if config["PASSWORD"] is None and args.password is None:
@@ -136,11 +134,11 @@ def insert_mock_data():
     from .models import Pokemon, Pokestop, Gym
     from .search import generate_location_steps
 
-    latitude, longitude = float(config['ORIGINAL_LATITUDE']),\
-        float(config['ORIGINAL_LONGITUDE'])
+    locations = []
 
-    locations = [l for l in generate_location_steps((latitude, longitude),
-                 num_pokemon)]
+    for position in config['POSITIONS']:
+        locations = locations + [l for l in generate_location_steps(position)]
+
     disappear_time = datetime.now() + timedelta(hours=1)
 
     detect_time = datetime.now()

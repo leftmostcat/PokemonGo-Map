@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import os
-import sys
+import json
 import logging
 import time
 
@@ -48,13 +47,16 @@ if __name__ == '__main__':
     db = init_database()
     create_tables(db)
 
-    position = get_pos_by_name(args.location)
-    if not any(position):
-        log.error('Could not get a position by name, aborting.')
-        sys.exit()
+    parsed_positions = json.loads(args.location)
 
-    log.info('Parsed location is: {:.4f}/{:.4f}/{:.4f} (lat/lng/alt)'.
-             format(*position))
+    positions_as_array = parsed_positions if isinstance(parsed_positions, list) else [parsed_positions]
+
+    for position in positions_as_array:
+        if isinstance(position, list):
+            config['POSITIONS'].append(position)
+        else:
+            config['POSITIONS'].append(get_pos_by_name(position))
+
     if args.no_pokemon:
         log.info('Parsing of Pokemon disabled.')
     if args.no_pokestops:
@@ -62,8 +64,6 @@ if __name__ == '__main__':
     if args.no_gyms:
         log.info('Parsing of Gyms disabled.')
 
-    config['ORIGINAL_LATITUDE'] = position[0]
-    config['ORIGINAL_LONGITUDE'] = position[1]
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     app = Pogom(__name__)
 
     if args.cors:
-        CORS(app);
+        CORS(app)
 
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key

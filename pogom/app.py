@@ -25,8 +25,6 @@ class Pogom(Flask):
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
-        self.route("/loc", methods=['GET'])(self.loc)
-        self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
 
     def fullmap(self):
@@ -36,8 +34,8 @@ class Pogom(Flask):
             display = "none"
 
         return render_template('map.html',
-                               lat=config['ORIGINAL_LATITUDE'],
-                               lng=config['ORIGINAL_LONGITUDE'],
+                               lat=config['POSITIONS'][0][0],
+                               lng=config['POSITIONS'][0][1],
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=display
@@ -68,34 +66,6 @@ class Pogom(Flask):
                                                       neLng)
 
         return jsonify(d)
-
-    def loc(self):
-        d = {}
-        d['lat'] = config['ORIGINAL_LATITUDE']
-        d['lng'] = config['ORIGINAL_LONGITUDE']
-
-        return jsonify(d)
-
-    def next_loc(self):
-        args = get_args()
-        if args.fixed_location:
-            return 'Location searching is turned off', 403
-        # part of query string
-        if request.args:
-            lat = request.args.get('lat', type=float)
-            lon = request.args.get('lon', type=float)
-        # from post requests
-        if request.form:
-            lat = request.form.get('lat', type=float)
-            lon = request.form.get('lon', type=float)
-
-        if not (lat and lon):
-            log.warning('Invalid next location: %s,%s' % (lat, lon))
-            return 'bad parameters', 400
-        else:
-            config['NEXT_LOCATION'] = {'lat': lat, 'lon': lon}
-            log.info('Changing next location: %s,%s' % (lat, lon))
-            return 'ok'
 
     def list_pokemon(self):
         # todo: check if client is android/iOS/Desktop for geolink, currently
@@ -134,8 +104,8 @@ class Pogom(Flask):
         pokemon_list = [y[0] for y in sorted(pokemon_list, key=lambda x: x[1])]
         return render_template('mobile_list.html',
                                pokemon_list=pokemon_list,
-                               origin_lat=lat,
-                               origin_lng=lon)
+                               origin_lat=config['POSITIONS'][0][0],
+                               origin_lng=config['POSITIONS'][0][1])
 
 
 class CustomJSONEncoder(JSONEncoder):

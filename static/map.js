@@ -148,10 +148,6 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
-  playSound: {
-    default: false,
-    type: StoreTypes.Boolean
-  },
   pokemonIcons: {
     default: 'highres',
     type: StoreTypes.String
@@ -236,7 +232,7 @@ function initMap() {
         'style_light2_nl',
         'style_pgo_nl'
       ]
-    },
+    }
   });
 
   var style_NoLabels = new google.maps.StyledMapType(noLabelsStyle, {
@@ -281,50 +277,13 @@ function initMap() {
   map.setMapTypeId(Store.get('map_style'));
   google.maps.event.addListener(map, 'idle', updateMap);
 
-  var marker = createSearchMarker();
-
   addMyLocationButton();
   initSidebar();
-  google.maps.event.addListenerOnce(map, 'idle', function() {
-    updateMap();
-  });
 
   google.maps.event.addListener(map, 'zoom_changed', function() {
     redrawPokemon(map_data.pokemons);
     redrawPokemon(map_data.lure_pokemons);
   });
-}
-
-function createSearchMarker() {
-  marker = new google.maps.Marker({ //need to keep reference.
-    position: {
-      lat: center_lat,
-      lng: center_lng
-    },
-    map: map,
-    animation: google.maps.Animation.DROP,
-    draggable: true
-  });
-
-  var oldLocation = null;
-  google.maps.event.addListener(marker, 'dragstart', function() {
-    oldLocation = marker.getPosition();
-  });
-
-  google.maps.event.addListener(marker, 'dragend', function() {
-    var newLocation = marker.getPosition();
-    changeSearchLocation(newLocation.lat(), newLocation.lng())
-      .done(function() {
-        oldLocation = null;
-      })
-      .fail(function() {
-        if (oldLocation) {
-          marker.setPosition(oldLocation);
-        }
-      });
-  });
-
-  return marker;
 }
 
 function initSidebar() {
@@ -336,20 +295,6 @@ function initSidebar() {
   $('#geoloc-switch').prop('checked', Store.get('geoLocate'));
   $('#scanned-switch').prop('checked', Store.get('showScanned'));
   $('#sound-switch').prop('checked', Store.get('playSound'));
-
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'));
-  $("#next-location").css("background-color", $('#geoloc-switch').prop('checked') ? "#e0e0e0" : "#ffffff");
-
-  searchBox.addListener('places_changed', function() {
-    var places = searchBox.getPlaces();
-
-    if (places.length == 0) {
-      return;
-    }
-
-    var loc = places[0].geometry.location;
-    changeLocation(loc.lat(), loc.lng());
-  });
 
   var icons = $('#pokemon-icons');
   $.each(pokemon_sprites, function(key, value) {
@@ -1063,18 +1008,6 @@ function addMyLocationButton() {
   });
 }
 
-function changeLocation(lat, lng) {
-  var loc = new google.maps.LatLng(lat, lng);
-  changeSearchLocation(lat, lng).done(function() {
-    map.setCenter(loc);
-    marker.setPosition(loc);
-  });
-}
-
-function changeSearchLocation(lat, lng) {
-  return $.post("next_loc?lat=" + lat + "&lon=" + lng, {});
-}
-
 function centerMap(lat, lng, zoom) {
   var loc = new google.maps.LatLng(lat, lng);
 
@@ -1180,7 +1113,7 @@ $(function() {
       });
     }
   }, 1000);
-  
+
   //Wipe off/restore map icons when switches are toggled
   function buildSwitchChangeListener(data, data_type, storageKey) {
     return function () {
@@ -1238,8 +1171,6 @@ $(function() {
   });
 
   $('#geoloc-switch').change(function() {
-    $("#next-location").prop("disabled", this.checked);
-    $("#next-location").css("background-color", this.checked ? "#e0e0e0" : "#ffffff");
     if (!navigator.geolocation)
       this.checked = false;
     else
