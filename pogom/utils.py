@@ -108,6 +108,8 @@ def get_args():
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
+    parser.add_argument('-px', '--proxy',
+                        help='URL for a proxy to route all API requests through', default=None)
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')

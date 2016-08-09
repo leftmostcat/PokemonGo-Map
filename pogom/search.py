@@ -190,7 +190,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             log.debug('Entering search loop')
 
             # Create the API instance this will use
-            api = PGoApi()
+            api = PGoApi(proxy=args.proxy)
 
             # The forever loop for the searches
             while True:
